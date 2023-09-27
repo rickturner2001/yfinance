@@ -1641,20 +1641,28 @@ class TickerBase:
     def _get_ticker_tz(self, proxy, timeout):
         if self._tz is not None:
             return self._tz
-        cache = utils.get_tz_cache()
-        tz = cache.lookup(self.ticker)
 
-        if tz and not utils.is_valid_timezone(tz):
-            # Clear from cache and force re-fetch
-            cache.store(self.ticker, None)
-            tz = None
+        tz = None
+        cache = None
+
+        has_writing_privileges = utils.can_write_to_cache_dir()
+        
+        if has_writing_privileges:
+            cache = utils.get_tz_cache()
+            tz = cache.lookup(self.ticker)
+
+            if tz and not utils.is_valid_timezone(tz):
+                # Clear from cache and force re-fetch
+                cache.store(self.ticker, None)
+                tz = None
 
         if tz is None:
             tz = self._fetch_ticker_tz(proxy, timeout)
 
             if utils.is_valid_timezone(tz):
                 # info fetch is relatively slow so cache timezone
-                cache.store(self.ticker, tz)
+                if has_writing_privileges:
+                    cache.store(self.ticker, tz)
             else:
                 tz = None
 
@@ -1675,6 +1683,8 @@ class TickerBase:
         try:
             data = self._data.cache_get(url=url, params=params, proxy=proxy, timeout=timeout)
             data = data.json()
+            if not utils.can_write_to_cache_dir():
+                return data["chart"]["result"][0]["meta"]["exchangeTimezoneName"]
         except Exception as e:
             logger.error(f"Failed to get ticker '{self.ticker}' reason: {e}")
             return None

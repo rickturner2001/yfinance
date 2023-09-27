@@ -943,6 +943,9 @@ class _TzCacheManager:
             cls._tz_cache = _TzCacheDummy()
 
 
+def can_write_to_cache_dir():
+    return _os.access(_ad.user_cache_dir(), _os.W_OK)
+
 class _DBManager:
     _db = None
     _cache_dir = _os.path.join(_ad.user_cache_dir(), "py-yfinance")
@@ -968,16 +971,17 @@ class _DBManager:
         if cache_dir is not None:
             cls._cache_dir = cache_dir
 
-        if not _os.path.isdir(cls._cache_dir):
-            _os.mkdir(cls._cache_dir)
-        cls._db = _peewee.SqliteDatabase(
-            _os.path.join(cls._cache_dir, 'tkr-tz.db'),
-            pragmas={'journal_mode': 'wal', 'cache_size': -64}
-        )
+        if can_write_to_cache_dir():
+            if not _os.path.isdir(cls._cache_dir):
+                _os.mkdir(cls._cache_dir)
+            cls._db = _peewee.SqliteDatabase(
+                _os.path.join(cls._cache_dir, 'tkr-tz.db'),
+                pragmas={'journal_mode': 'wal', 'cache_size': -64}
+            )
 
-        old_cache_file_path = _os.path.join(cls._cache_dir, "tkr-tz.csv")
-        if _os.path.isfile(old_cache_file_path):
-            _os.remove(old_cache_file_path)
+            old_cache_file_path = _os.path.join(cls._cache_dir, "tkr-tz.csv")
+            if _os.path.isfile(old_cache_file_path):
+                _os.remove(old_cache_file_path)
 
     @classmethod
     def change_location(cls, new_cache_dir):
