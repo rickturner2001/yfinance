@@ -27,6 +27,7 @@ from collections import namedtuple as _namedtuple
 import pandas as _pd
 
 from .base import TickerBase
+from .scrapers.quote import CalendarData
 
 
 class Ticker(TickerBase):
@@ -146,7 +147,7 @@ class Ticker(TickerBase):
         return self.get_fast_info()
 
     @property
-    def calendar(self) -> _pd.DataFrame:
+    def calendar(self) -> CalendarData:
         return self.get_calendar()
 
     @property
